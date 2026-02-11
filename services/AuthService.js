@@ -24,9 +24,9 @@ export const register = async (userObj) => {
 };
 
 //authenticate function
-export const authenticate = async ({ email, password, role }) => {
+export const authenticate = async ({ email, password}) => {
     //check user with email & role
-  const user = await UserTypeModel.findOne({ email, role });
+  const user = await UserTypeModel.findOne({ email});
   if (!user) {
     const err = new Error("Invalid email or role");
     err.status = 401;
@@ -40,6 +40,13 @@ export const authenticate = async ({ email, password, role }) => {
     const err = new Error("Invalid password");
     err.status = 401;
     throw err;
+  }
+  // active state ;
+  if(user.isActive===false){
+    const err=new Error("Your account is blocked .plz contact Admin");
+    err.status=403;
+    throw err;
+
   }
 
   //generate token

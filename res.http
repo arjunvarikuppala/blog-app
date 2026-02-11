@@ -4,21 +4,20 @@ POST http://localhost:4000/user-api/users
 Content-Type: application/json
 
 {
-  "firstName": "Anurag",
-  "lastName": "Sharma",
-  "email": "anurag.user@example.com",
-  "password": "User@12345",
+  "firstName": "abhiram",
+  "lastName": "bheemari",
+  "email": "e07@gmail.com",
+  "password": "Anurag@07",
   "profileImageUrl": "https://example.com/avatars/user.png"
 }
 
 ### User Login
-POST http://localhost:4000/user-api/authenticate
+POST http://localhost:4000/Common-api/login
 Content-Type: application/json
 
 {
-  "email": "anurag.user@example.com",
-  "password": "User@12345",
-  "role":"USER"
+  "email": "e07@gmail.com",
+  "password": "Anurag@07"
 }
 
 ### Author Register
@@ -47,13 +46,12 @@ Content-Type: application/json
 }
 
 ### Author Login
-POST http://localhost:4000/author-api/authenticate
+POST http://localhost:4000/common-api/login
 Content-Type: application/json
 
 {
   "email": "vikas.author@example.com",
-  "password": "Author@12345",
-  "role":"AUTHOR"
+  "password": "Author@12345"
 }
 
 
@@ -91,4 +89,17 @@ Content-Type: application/json
 
 
 ### Logout
-POST http://localhost:4000/logout 
+GET http://localhost:4000/Common-api/logout
+
+
+###
+GET http://localhost:4000/test
+
+
+###
+PUT http://localhost:4000/admin-api/admin/block/698acad5ad07edd8a01dc66e
+
+### unblock 
+PUT http://localhost:4000/admin-api/admin/unblock/698acad5ad07edd8a01dc66e
+
+

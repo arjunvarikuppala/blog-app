@@ -1,5 +1,8 @@
 import exp from "express";
-import { register, authenticate } from "../services/authService.js";
+
+
+
+import { register, authenticate } from "../services/AuthService.js";
 
 export const userRoute = exp.Router();
 

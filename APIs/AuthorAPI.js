@@ -21,22 +21,22 @@ authorRoute.post("/users", async (req, res) => {
 });
 
 // Authenticate author (public)
-authorRoute.post("/authenticate", async (req, res) => {
-  try {
-    const userCred = req.body;
-    const { token, user } = await authenticate(userCred);
+// authorRoute.post("/authenticate", async (req, res) => {
+//   try {
+//     const userCred = req.body;
+//     const { token, user } = await authenticate(userCred);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    });
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       sameSite: "lax",
+//       secure: false,
+//     });
 
-    res.status(200).json({ message: "login success", payload: user });
-  } catch (err) {
-    res.status(401).json({ message: "invalid credentials", error: err.message });
-  }
-});
+//     res.status(200).json({ message: "login success", payload: user });
+//   } catch (err) {
+//     res.status(401).json({ message: "invalid credentials", error: err.message });
+//   }
+// });
 
 // Create article (protected)
 authorRoute.post(

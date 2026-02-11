@@ -5,6 +5,7 @@ import { userRoute } from "./APIs/UserAPI.js";
 import cookieParser from "cookie-parser";
 import { adminRoute } from "./APIs/AdminAPI.js";
 import { authorRoute } from "./APIs/AuthorAPI.js";
+import { commonRouter } from "./APIs/CommonAPI.js";
 
 config(); //process.env
 
@@ -19,6 +20,7 @@ app.use(cookieParser())
 app.use("/user-api", userRoute);
 app.use("/author-api", authorRoute);
 app.use("/admin-api", adminRoute);
+app.use("/Common-api",commonRouter);
 
 //connect to db
 const connectDB = async () => {
@@ -35,22 +37,22 @@ const connectDB = async () => {
 
 connectDB();
 
-//logout for User, Author and Admin
-app.post('/logout', (req, res) => {
-  // Clear the cookie named 'token'
-  res.clearCookie('token', {
-    httpOnly: true, // Must match original  settings
-    secure: false,   // Must match original  settings
-    sameSite: 'lax' // Must match original  settings
-  });
+// //logout for User, Author and Admin
+// app.post('/logout', (req, res) => {
+//   // Clear the cookie named 'token'
+//   res.clearCookie('token', {
+//     httpOnly: true, // Must match original  settings
+//     secure: false,   // Must match original  settings
+//     sameSite: 'lax' // Must match original  settings
+//   });
   
-  res.status(200).json({ message: 'Logged out successfully' });
-});
-
+//   res.status(200).json({ message: 'Logged out successfully' });
+// });
 
 
 app.use((req,res,next)=>{
-  res.json({message:"Invalid path"})
+  console.log(req.url)
+  res.json({message:`${req.url} is invalid`})  //it checks the given paths ,if none of them matched then it return "invalid path";
 })
 
 //error handling middleware
