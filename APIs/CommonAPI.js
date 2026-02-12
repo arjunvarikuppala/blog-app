@@ -3,6 +3,8 @@ export const commonRouter =exp.Router();
 import { authenticate } from '../services/AuthService.js';
 import { verifyToken } from '../middlewares/verifyToken.js';    
 import { checkAuthor } from '../middlewares/checkAuthor.js';    
+import UserTypeModel from '../models/UserModel.js';
+import bcrypt from 'bcryptjs';  
 
 
 //login 
@@ -43,45 +45,50 @@ commonRouter.get('/logout', (req, res) => {
 
 
 
-//change the password (protected route)
-commonRouter.put(
-  '/change-password',
-  verifyToken,
-  checkAuthor,
-  async (req, res) => {
-    try {
+// Change Password Route
+// Allows a user to update their password
 
-      const userId = req.user._id;  // from verifyToken
-      const { oldPassword, newPassword } = req.body;
+commonRouter.put('/change-password', async (req, res) => {
+  try {
 
-      // Validate input
-      if (!oldPassword || !newPassword) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
+    // Extract email, current password and new password from request body
+    let { email, currentPassword, newPassword } = req.body;
 
-      // Find user
-      const user = await UserTypeModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    // Find the user in the database using the provided email
+    let userObj = await UserTypeModel.findOne({ email });
 
-      // Compare old password
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
-        return res.status(401).json({ message: "Old password is incorrect" });
-      }
-
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      // Update password
-      user.password = hashedPassword;
-      await user.save();
-
-      res.status(200).json({ message: "Password changed successfully" });
-
-    } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+    // If user is not found, return 404 error
+    if (!userObj) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    // Compare the entered current password with the hashed password in database
+    let isMatched = await bcrypt.compare(
+      currentPassword,      // Password entered by user
+      userObj.password      // Hashed password stored in DB
+    );
+
+    // If passwords do not match, return unauthorized error
+    if (!isMatched) {
+      return res.status(401).json({ message: "Old Password is Invalid" });
+    }
+
+    // Hash the new password before saving it
+    // 10 represents the salt rounds used for hashing
+    let newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the database
+    await UserTypeModel.findByIdAndUpdate(
+      userObj._id,
+      { $set: { password: newHashedPassword } }
+    );
+
+    // Send success response
+    res.status(200).json({ message: "Password changed successfully" });
+
+  } catch (error) {
+    // Handle unexpected errors
+    res.status(400).json({ message: error.message });
   }
-);
+});
+

@@ -103,3 +103,13 @@ PUT http://localhost:4000/admin-api/admin/block/698acad5ad07edd8a01dc66e
 PUT http://localhost:4000/admin-api/admin/unblock/698acad5ad07edd8a01dc66e
 
 
+### 
+PUT http://localhost:4000/common-api/change-password
+Content-Type: application/json
+
+{
+  "email":"e07@gmail.com",
+  "currentPassword":"Anurag@123456",
+  "newPassword":"Anurag@12"
+}
+
