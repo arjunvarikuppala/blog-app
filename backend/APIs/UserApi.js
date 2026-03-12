@@ -1,8 +1,7 @@
 import exp from "express";
-
-
-
 import { register, authenticate } from "../services/AuthService.js";
+import { verifyToken } from "../middlewares/verifyToken.js";
+import ArticleModel from "../models/ArticleModel.js";
 
 export const userRoute = exp.Router();
 
@@ -33,4 +32,18 @@ userRoute.post("/authenticate", async (req, res) => {
 });
 
 //Read all articles(protected route)
+userRoute.get("/articles", verifyToken, async (req, res) => {
+  try {
+    const articles = await ArticleModel.find({
+      isArticleActive: true,
+    })
+      .sort({ createdAt: -1 })
+      .populate("author", "firstName lastName email profileImageUrl");
+
+    res.status(200).json({ message: "articles", payload: articles });
+  } catch (err) {
+    res.status(500).json({ message: "error fetching articles", error: err.message });
+  }
+});
+
 //Add comment to an article(protected route)

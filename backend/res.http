@@ -6,8 +6,8 @@ Content-Type: application/json
 {
   "firstName": "abhiram",
   "lastName": "bheemari",
-  "email": "e07@gmail.com",
-  "password": "Anurag@07",
+  "email": "e63@gmail.com",
+  "password": "Anurag@63",
   "profileImageUrl": "https://example.com/avatars/user.png"
 }
 
@@ -27,8 +27,8 @@ Content-Type: application/json
 {
   "firstName": "Vikas",
   "lastName": "Author",
-  "email": "vikas.author@example.com",
-  "password": "Author@12345",
+  "email": "rajesh.author@example.com",
+  "password": "rajesh",
   "profileImageUrl": "https://example.com/avatars/author.png"
 }
 
