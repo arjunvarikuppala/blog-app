@@ -1,23 +1,22 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
+import toast from "react-hot-toast"
+import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "../store/userAuth"
+import { getDashboardPath } from "../utils/appRoutes"
 
 const registerEndpoints = {
   user: "/user-api/users",
   author: "/author-api/users",
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = () => reject(new Error("Unable to read the selected image"))
-    reader.readAsDataURL(file)
-  })
-}
 
-function Register({ onSwitchToLogin }) {
+function Register() {
+  const [preview, setPreview] = useState("")
   const [submitMessage, setSubmitMessage] = useState("")
   const [submitError, setSubmitError] = useState("")
+  const navigate = useNavigate()
+  const login = useAuthStore((state) => state.login)
 
   const {
     control,
@@ -40,6 +39,29 @@ function Register({ onSwitchToLogin }) {
     control,
     name: "role",
   })
+  const profileImage = useWatch({
+    control,
+    name: "profileImage",
+  })
+
+  useEffect(() => {
+    const file = profileImage?.[0]
+
+    if (!file) {
+      setPreview("")
+      return
+    }
+
+    setPreview(URL.createObjectURL(file))
+  }, [profileImage])
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview)
+      }
+    }
+  }, [preview])
 
   const onSubmit = async (formData) => {
     try {
@@ -47,28 +69,21 @@ function Register({ onSwitchToLogin }) {
       setSubmitMessage("")
 
       const profileImageFile = formData.profileImage?.[0]
-      const profileImageUrl = profileImageFile
-        ? await readFileAsDataUrl(profileImageFile)
-        : ""
+      const payload = new FormData()
 
-      const payload = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
-        password: formData.password,
-      }
+      payload.append("firstName", formData.firstName.trim())
+      payload.append("lastName", formData.lastName.trim())
+      payload.append("email", formData.email.trim())
+      payload.append("password", formData.password)
 
-      if (profileImageUrl) {
-        payload.profileImageUrl = profileImageUrl
+      if (profileImageFile) {
+        payload.append("profileImage", profileImageFile)
       }
 
       const endpoint = registerEndpoints[formData.role] ?? registerEndpoints.user
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
       })
 
       const data = await response.json().catch(() => ({}))
@@ -79,17 +94,40 @@ function Register({ onSwitchToLogin }) {
         throw new Error(details || fallbackError)
       }
 
-      setSubmitMessage(data.message || "Registration successful")
-      reset({
-        role: formData.role,
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        profileImage: null,
-      })
+      setSubmitMessage("Account created. Signing you in...")
+
+      try {
+        const user = await login(
+          {
+            email: formData.email.trim(),
+            password: formData.password,
+          },
+          data?.payload?.role ?? formData.role.toUpperCase(),
+        )
+
+        reset({
+          role: formData.role,
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          profileImage: null,
+        })
+
+        navigate(getDashboardPath(user.role), { replace: true })
+      } catch (loginError) {
+        const message =
+          loginError?.response?.data?.error ||
+          loginError?.response?.data?.message ||
+          "Account created, but automatic login failed. Please sign in."
+
+        setSubmitMessage("")
+        setSubmitError(message)
+      }
     } catch (error) {
-      setSubmitError(error.message || "Registration failed")
+      const message = error.message || "Registration failed"
+      setSubmitError(message)
+      toast.error(message)
     }
   }
 
@@ -195,11 +233,25 @@ function Register({ onSwitchToLogin }) {
 
             <input
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg"
               className="file-input"
               {...register("profileImage")}
             />
           </label>
+
+          {preview ? (
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+              <img
+                src={preview}
+                alt="Profile preview"
+                className="h-16 w-16 rounded-full object-cover"
+              />
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Preview</p>
+                <p className="muted-text mt-1">Selected profile image</p>
+              </div>
+            </div>
+          ) : null}
 
           {submitError ? (
             <p className="error-text text-center">{submitError}</p>
@@ -224,7 +276,7 @@ function Register({ onSwitchToLogin }) {
             <button
               type="button"
               className="font-semibold text-blue-500"
-              onClick={onSwitchToLogin}
+              onClick={() => navigate("/login")}
             >
               Sign in
             </button>

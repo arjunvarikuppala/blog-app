@@ -1,29 +1,24 @@
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/userAuth'
+import { getDashboardPath } from '../utils/appRoutes'
 
-const roleMap = {
-  user: 'USER',
-  author: 'AUTHOR',
-  admin: 'ADMIN',
-}
-
-function Login({ onLoginSuccess }) {
+function Login() {
   const [submitMessage, setSubmitMessage] = useState('')
   const login = useAuthStore((state) => state.login)
   const loading = useAuthStore((state) => state.loading)
   const submitError = useAuthStore((state) => state.error)
   const clearError = useAuthStore((state) => state.clearError)
+  const navigate = useNavigate()
 
   const {
-    control,
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      role: 'user',
       email: '',
       password: '',
     },
@@ -33,31 +28,22 @@ function Login({ onLoginSuccess }) {
     clearError()
   }, [clearError])
 
-  const selectedRole = useWatch({
-    control,
-    name: 'role',
-  })
-
   const onSubmit = async (formData) => {
     try {
       setSubmitMessage('')
       clearError()
 
-      const user = await login(
-        {
-          email: formData.email.trim(),
-          password: formData.password,
-        },
-        roleMap[formData.role],
-      )
+      const user = await login({
+        email: formData.email.trim(),
+        password: formData.password,
+      })
 
       setSubmitMessage('Login successful')
       reset({
-        role: formData.role,
         email: '',
         password: '',
       })
-      onLoginSuccess?.(user)
+      navigate(getDashboardPath(user.role), { replace: true })
     } catch (error) {
       void error
     }
@@ -68,25 +54,6 @@ function Login({ onLoginSuccess }) {
       <h2 className="form-title">Login</h2>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div>
-          <span className="field-label">Select Role</span>
-          <div className="flex flex-wrap gap-3">
-            {['user', 'author', 'admin'].map((role) => (
-              <label key={role} className="radio-chip">
-                <input
-                  type="radio"
-                  value={role}
-                  className="h-4 w-4 accent-sky-500"
-                  {...register('role')}
-                />
-                <span className={selectedRole === role ? 'text-sky-600' : ''}>
-                  {role === 'user' ? 'User' : role === 'author' ? 'Author' : 'Admin'}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         <label>
           <span className="field-label">Email</span>
           <input
