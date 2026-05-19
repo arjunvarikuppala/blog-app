@@ -56,26 +56,27 @@ app.use("/Common-api",commonRouter);
 const connectDB = async () => {
   try {
     if (!dbUrl) {
-      console.log("Missing DB_URL in backend/.env");
+      console.log("Missing DB_URL environment variable");
       return;
     }
 
     if (!/^mongodb(\+srv)?:\/\//.test(dbUrl)) {
-      console.log("Invalid DB_URL in backend/.env. It must start with mongodb:// or mongodb+srv://");
+      console.log("Invalid DB_URL. It must start with mongodb:// or mongodb+srv://");
       return;
     }
 
     await connect(dbUrl);
     console.log("DB connection success");
-
-    //start http server
-    app.listen(port, () => console.log(`server started on port ${port}`));
   } catch (err) {
-    console.log("Err in DB connection", err);
+    console.log("Err in DB connection:", err);
   }
 };
 
-connectDB();
+//start http server immediately
+app.listen(port, () => {
+  console.log(`server started on port ${port}`);
+  connectDB();
+});
 
 
 
