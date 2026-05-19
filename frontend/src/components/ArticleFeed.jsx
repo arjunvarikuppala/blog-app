@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import ArticleDetailModal from './ArticleDetailModal'
 import { useAuthStore } from '../store/userAuth'
+import { api, getApiErrorMessage } from '../utils/api'
 
 function getAuthorName(author) {
   if (!author || typeof author === 'string') {
@@ -40,21 +40,14 @@ function ArticleFeed() {
         setLoading(true)
         setError('')
 
-        const res = await axios.get('http://localhost:4000/user-api/articles', {
-          withCredentials: true,
-        })
+        const res = await api.get('/user-api/articles')
 
         if (isMounted) {
           setArticles(res.data?.payload ?? [])
         }
       } catch (err) {
         if (isMounted) {
-          setError(
-            err.response?.data?.error ||
-              err.response?.data?.message ||
-              err.message ||
-              'Unable to load articles',
-          )
+          setError(getApiErrorMessage(err, 'Unable to load articles'))
         }
       } finally {
         if (isMounted) {
@@ -93,11 +86,9 @@ function ArticleFeed() {
     try {
       setSubmittingArticleId(articleId)
 
-      const res = await axios.post(
-        `http://localhost:4000/user-api/articles/${articleId}/comments`,
-        { comment: commentText },
-        { withCredentials: true },
-      )
+      const res = await api.post(`/user-api/articles/${articleId}/comments`, {
+        comment: commentText,
+      })
 
       const updatedArticle = res.data?.payload
 
@@ -116,11 +107,7 @@ function ArticleFeed() {
 
       toast.success(res.data?.message || 'Comment added')
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Unable to add comment'
+      const message = getApiErrorMessage(err, 'Unable to add comment')
 
       toast.error(message)
     } finally {

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import AddArticle from './AddArticle'
 import ArticleDetailModal from './ArticleDetailModal'
 import { useAuthStore } from '../store/userAuth'
+import { api, getApiErrorMessage } from '../utils/api'
 
 function formatPublishedDate(value) {
   if (!value) {
@@ -53,24 +53,14 @@ function AuthorDashboard() {
         setLoading(true)
         setError('')
 
-        const res = await axios.get(
-          `http://localhost:4000/author-api/articles/${currentUser._id}`,
-          {
-            withCredentials: true,
-          },
-        )
+        const res = await api.get(`/author-api/articles/${currentUser._id}`)
 
         if (isMounted) {
           setArticles((res.data?.payload ?? []).map((article) => normalizeArticle(article, currentUser)))
         }
       } catch (err) {
         if (isMounted) {
-          setError(
-            err.response?.data?.error ||
-              err.response?.data?.message ||
-              err.message ||
-              'Unable to load your articles',
-          )
+          setError(getApiErrorMessage(err, 'Unable to load your articles'))
         }
       } finally {
         if (isMounted) {
@@ -138,13 +128,10 @@ function AuthorDashboard() {
       setVisibilitySubmittingId(article._id)
 
       const nextVisibility = !article.isArticleActive
-      const res = await axios.patch(
-        `http://localhost:4000/author-api/articles/${article._id}/visibility`,
+      const res = await api.patch(
+        `/author-api/articles/${article._id}/visibility`,
         {
           isArticleActive: nextVisibility,
-        },
-        {
-          withCredentials: true,
         },
       )
 
@@ -154,11 +141,7 @@ function AuthorDashboard() {
           (nextVisibility ? 'Article is visible again' : 'Article hidden from readers'),
       )
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Unable to update article visibility'
+      const message = getApiErrorMessage(err, 'Unable to update article visibility')
 
       toast.error(message)
     } finally {

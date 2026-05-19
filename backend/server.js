@@ -1,20 +1,46 @@
 import exp from "express";
 import { connect } from "mongoose";
 import { config } from "dotenv";
-import { userRoute } from "./APIs/UserAPI.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import { userRoute } from "./APIs/UserApi.js";
 import cookieParser from "cookie-parser";
 import { adminRoute } from "./APIs/AdminAPI.js";
 import { authorRoute } from "./APIs/AuthorAPI.js";
 import { commonRouter } from "./APIs/CommonAPI.js";
 import cors from 'cors'  ;
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-config(); //process.env
+config({
+  path: path.resolve(__dirname, ".env"),
+  quiet: true,
+}); //process.env
+
+const localOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
+const configuredOrigins = (process.env.CLIENT_URLS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set(configuredOrigins);
+const dbUrl = process.env.DB_URL?.trim().replace(/^['"]|['"]$/g, "");
+const port = Number(process.env.PORT) || 4000;
 
 //Create express application
 const app = exp();
 //cors 
-app.use(cors({origin:["http://localhost:5173"],credentials:true}));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || localOriginPattern.test(origin) || allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin ${origin}`));
+  },
+  credentials: true,
+}));
 //add body parser middleware
 app.use(exp.json());
 //add cookie parser middleware
@@ -29,11 +55,21 @@ app.use("/Common-api",commonRouter);
 //connect to db
 const connectDB = async () => {
   try {
-    await connect(process.env.DB_URL);
+    if (!dbUrl) {
+      console.log("Missing DB_URL in backend/.env");
+      return;
+    }
+
+    if (!/^mongodb(\+srv)?:\/\//.test(dbUrl)) {
+      console.log("Invalid DB_URL in backend/.env. It must start with mongodb:// or mongodb+srv://");
+      return;
+    }
+
+    await connect(dbUrl);
     console.log("DB connection success");
 
     //start http server
-    app.listen(process.env.PORT, () => console.log(`server started on port ${process.env.PORT}`));
+    app.listen(port, () => console.log(`server started on port ${port}`));
   } catch (err) {
     console.log("Err in DB connection", err);
   }
@@ -62,6 +98,18 @@ app.use((err, req, res, next) => {
     return res.status(400).json({
       message: "error occurred",
       error: err.message,
+    });
+  }
+
+  if (err.name === "MulterError") {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Profile image must be 2MB or smaller"
+        : err.message;
+
+    return res.status(400).json({
+      message: "error occurred",
+      error: message,
     });
   }
 

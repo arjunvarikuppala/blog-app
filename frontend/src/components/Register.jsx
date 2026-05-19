@@ -4,6 +4,7 @@ import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../store/userAuth"
 import { getDashboardPath } from "../utils/appRoutes"
+import { api, getApiErrorMessage } from "../utils/api"
 
 const registerEndpoints = {
   user: "/user-api/users",
@@ -48,20 +49,20 @@ function Register() {
     const file = profileImage?.[0]
 
     if (!file) {
-      setPreview("")
+      if (preview) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPreview("")
+      }
       return
     }
 
-    setPreview(URL.createObjectURL(file))
-  }, [profileImage])
+    const objectUrl = URL.createObjectURL(file)
+    setPreview(objectUrl)
 
-  useEffect(() => {
     return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview)
-      }
+      URL.revokeObjectURL(objectUrl)
     }
-  }, [preview])
+  }, [profileImage, preview])
 
   const onSubmit = async (formData) => {
     try {
@@ -81,18 +82,8 @@ function Register() {
       }
 
       const endpoint = registerEndpoints[formData.role] ?? registerEndpoints.user
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: payload,
-      })
-
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        const details = Array.isArray(data.details) ? data.details.join(", ") : ""
-        const fallbackError = data.error || data.message || "Registration failed"
-        throw new Error(details || fallbackError)
-      }
+      const response = await api.post(endpoint, payload)
+      const data = response.data ?? {}
 
       setSubmitMessage("Account created. Signing you in...")
 
@@ -125,7 +116,7 @@ function Register() {
         setSubmitError(message)
       }
     } catch (error) {
-      const message = error.message || "Registration failed"
+      const message = getApiErrorMessage(error, "Registration failed")
       setSubmitError(message)
       toast.error(message)
     }

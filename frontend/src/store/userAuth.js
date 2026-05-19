@@ -1,11 +1,6 @@
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import { create } from 'zustand'
-
-const authApi = axios.create({
-  baseURL: 'http://localhost:4000',
-  withCredentials: true,
-})
+import { api, getApiErrorMessage } from '../utils/api'
 
 export const useAuthStore = create((set) => ({
   loading: false,
@@ -18,7 +13,7 @@ export const useAuthStore = create((set) => ({
     try {
       set({ loading: true, error: null })
 
-      const res = await authApi.get('/Common-api/check-auth')
+      const res = await api.get('/Common-api/check-auth')
       const user = res.data?.payload ?? null
 
       set({
@@ -42,11 +37,7 @@ export const useAuthStore = create((set) => ({
         return null
       }
 
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Unable to restore login'
+      const message = getApiErrorMessage(err, 'Unable to restore login')
 
       console.error('Auth check failed:', err)
 
@@ -66,7 +57,7 @@ export const useAuthStore = create((set) => ({
     try {
       set({ loading: true, error: null })
 
-      const res = await authApi.post('/Common-api/login', userCred)
+      const res = await api.post('/Common-api/login', userCred)
       const loggedInUser = res.data?.payload
 
       if (!loggedInUser) {
@@ -75,7 +66,7 @@ export const useAuthStore = create((set) => ({
 
       if (expectedRole && loggedInUser.role !== expectedRole) {
         try {
-          await authApi.get('/Common-api/logout')
+          await api.get('/Common-api/logout')
         } catch {
           // Best effort only. The store still needs to reject the mismatched login.
         }
@@ -97,11 +88,7 @@ export const useAuthStore = create((set) => ({
 
       return loggedInUser
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Login failed'
+      const message = getApiErrorMessage(err, 'Login failed')
 
       set({
         loading: false,
@@ -120,14 +107,10 @@ export const useAuthStore = create((set) => ({
   logout: async () => {
     try {
       set({ loading: true, error: null })
-      await authApi.get('/Common-api/logout')
+      await api.get('/Common-api/logout')
       toast.success('Logged out successfully')
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        err.message ||
-        'Logout failed'
+      const message = getApiErrorMessage(err, 'Logout failed')
 
       set({ error: message })
       toast.error(message)

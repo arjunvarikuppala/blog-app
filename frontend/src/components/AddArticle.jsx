@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import axios from 'axios'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import { api, getApiErrorMessage } from '../utils/api'
 
 const emptyArticleValues = {
   title: '',
@@ -55,14 +55,11 @@ function AddArticle({
       }
 
       if (isEditing) {
-        const res = await axios.put(
-          'http://localhost:4000/author-api/articles',
+        const res = await api.put(
+          '/author-api/articles',
           {
             articleId: articleToEdit._id,
             ...payload,
-          },
-          {
-            withCredentials: true,
           },
         )
 
@@ -72,20 +69,17 @@ function AddArticle({
         return
       }
 
-      const res = await axios.post('http://localhost:4000/author-api/articles', payload, {
-        withCredentials: true,
-      })
+      const res = await api.post('/author-api/articles', payload)
 
       toast.success(res.data?.message || 'Article published successfully')
       onArticleCreated?.(res.data?.payload)
 
       reset(emptyArticleValues)
     } catch (error) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        `Unable to ${isEditing ? 'update' : 'publish'} article`
+      const message = getApiErrorMessage(
+        error,
+        `Unable to ${isEditing ? 'update' : 'publish'} article`,
+      )
 
       toast.error(message)
     }

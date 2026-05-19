@@ -6,21 +6,23 @@ import { verifyToken } from "../middlewares/verifyToken.js";
 
 export const commonRouter = exp.Router();
 
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: process.env.NODE_ENV === "production",
+};
+
 // login
-commonRouter.post("/login", async (req, res) => {
+commonRouter.post("/login", async (req, res, next) => {
   try {
     const userCred = req.body;
     const { token, user } = await authenticate(userCred);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(200).json({ message: "login success", payload: user });
   } catch (err) {
-    res.status(401).json({ message: "invalid credentials", error: err.message });
+    next(err);
   }
 });
 
@@ -40,11 +42,7 @@ commonRouter.get("/check-auth", verifyToken, async (req, res, next) => {
 
 // logout for User, Author and Admin
 commonRouter.get("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
+  res.clearCookie("token", cookieOptions);
 
   res.status(200).json({ message: "Logged out successfully" });
 });
